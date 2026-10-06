@@ -306,13 +306,13 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
                       {application.position} — {application.company}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-slate-400">
+                  <td className="max-w-xs px-4 py-3 text-slate-400">
                     {application.technologies.map((t) => t.technology.name).join(", ")}
                   </td>
-                  <td className="px-4 py-3 text-slate-400">
+                  <td className="px-4 py-3 whitespace-nowrap text-slate-400">
                     {dateFormatter.format(application.createdAt)}
                   </td>
-                  <td className="px-4 py-3 text-slate-400">
+                  <td className="px-4 py-3 whitespace-nowrap text-slate-400">
                     {dateFormatter.format(application.statusChangedAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
