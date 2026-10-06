@@ -1,0 +1,139 @@
+// Schéma de données de JobTrack.
+// Provider "mysql" : compatible MariaDB (XAMPP), qui implémente le protocole
+// et le dialecte SQL de MySQL.
+
+generator client {
+  provider = "prisma-client-js"
+  // On sort le client généré du dossier node_modules par défaut et on le
+  // versionne hors de node_modules pour que l'import "@/generated/prisma"
+  // reste stable quel que soit le gestionnaire de paquets utilisé.
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Utilisateur
+// -----------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  // Hash bcrypt, jamais le mot de passe en clair.
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  applications  Application[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// Candidature
+// -----------------------------------------------------------------------------
+
+// Les 5 colonnes du Kanban. L'ordre des valeurs sert aussi d'ordre d'affichage
+// des colonnes dans l'UI.
+enum ApplicationStatus {
+  TO_APPLY
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+}
+
+model Application {
+  id          String            @id @default(cuid())
+  userId      String
+  company     String
+  position    String
+  jobUrl      String?
+  // Salaire annuel brut, en unité entière de la devise (ex. euros).
+  // Un entier évite les pièges d'arrondi du type Decimal pour une donnée
+  // qui n'a pas besoin de précision inférieure à l'unité.
+  salary      Int?
+  contactName  String?
+  contactEmail String?
+  notes       String?           @db.Text
+  status      ApplicationStatus @default(TO_APPLY)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user          User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  technologies  ApplicationTechnology[]
+  statusEvents  StatusEvent[]
+  notifications Notification[]
+
+  // Les vues Kanban et tableau de bord filtrent systématiquement par
+  // utilisateur puis par statut : un index composite couvre ces requêtes.
+  @@index([userId, status])
+  @@map("applications")
+}
+
+// -----------------------------------------------------------------------------
+// Technologies (tags), modélisées en relation plutôt qu'en champ texte libre
+// pour permettre un filtrage fiable et éviter les doublons ("React" / "react").
+// -----------------------------------------------------------------------------
+
+model Technology {
+  id   String @id @default(cuid())
+  name String @unique
+
+  applications ApplicationTechnology[]
+
+  @@map("technologies")
+}
+
+model ApplicationTechnology {
+  applicationId String
+  technologyId  String
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  technology  Technology  @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+
+  @@id([applicationId, technologyId])
+  @@map("application_technologies")
+}
+
+// -----------------------------------------------------------------------------
+// Historique des changements de statut (timeline sur la fiche candidature)
+// -----------------------------------------------------------------------------
+
+model StatusEvent {
+  id            String            @id @default(cuid())
+  applicationId String
+  // Null pour l'événement de création (il n'y a pas de statut "précédent").
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  createdAt     DateTime          @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("status_events")
+}
+
+// -----------------------------------------------------------------------------
+// Notifications (rappels de relance générés par le script /scripts)
+// -----------------------------------------------------------------------------
+
+model Notification {
+  id            String   @id @default(cuid())
+  userId        String
+  applicationId String?
+  message       String
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
