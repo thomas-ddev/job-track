@@ -53,6 +53,8 @@ export default async function ApplicationDetailPage({ params }: PageProps) {
             notes: application.notes,
             status: application.status,
             technologies: application.technologies.map((t) => t.technology.name),
+            createdAt: application.createdAt,
+            statusChangedAt: application.statusChangedAt,
           }}
         />
       </section>

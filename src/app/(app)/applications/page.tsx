@@ -6,9 +6,12 @@ import {
   listApplications,
   listUserTechnologyNames,
   PERIOD_OPTIONS,
-  SORT_OPTIONS,
+  SORT_COLUMNS,
+  SORT_DIRECTIONS,
+  defaultSortDirection,
   type PeriodOption,
-  type SortOption,
+  type SortColumn,
+  type SortDirection,
 } from "@/server/data/applications";
 import { StatusBadge } from "@/components/applications/status-badge";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/application-status";
@@ -25,10 +28,10 @@ const PERIOD_LABELS: Record<PeriodOption, string> = {
   all: "Toutes les périodes",
 };
 
-const SORT_LABELS: Record<SortOption, string> = {
-  statusChangedAt: "Date de relance",
-  createdAt: "Date de création",
-  name: "Nom",
+const COLUMN_LABELS: Record<SortColumn, string> = {
+  name: "Poste / Entreprise",
+  createdAt: "Candidature",
+  statusChangedAt: "Relance",
   status: "Statut",
 };
 
@@ -41,6 +44,7 @@ type PageProps = {
     technology?: string;
     period?: string;
     sort?: string;
+    dir?: string;
   }>;
 };
 
@@ -52,8 +56,72 @@ function isPeriodOption(value: string): value is PeriodOption {
   return (PERIOD_OPTIONS as readonly string[]).includes(value);
 }
 
-function isSortOption(value: string): value is SortOption {
-  return (SORT_OPTIONS as readonly string[]).includes(value);
+function isSortColumn(value: string): value is SortColumn {
+  return (SORT_COLUMNS as readonly string[]).includes(value);
+}
+
+function isSortDirection(value: string): value is SortDirection {
+  return (SORT_DIRECTIONS as readonly string[]).includes(value);
+}
+
+type ActiveFilters = {
+  search?: string;
+  status?: ApplicationStatus;
+  technology?: string;
+  period: PeriodOption;
+};
+
+// Construit le lien d'un en-tête de colonne triable : un clic sur la colonne
+// déjà active inverse la direction, un clic sur une autre colonne applique sa
+// direction par défaut. Les filtres actifs (recherche, statut, techno,
+// période) sont préservés dans l'URL.
+function buildSortHref(
+  column: SortColumn,
+  current: { column: SortColumn; direction: SortDirection },
+  filters: ActiveFilters,
+): string {
+  const nextDirection: SortDirection =
+    column === current.column
+      ? current.direction === "asc"
+        ? "desc"
+        : "asc"
+      : defaultSortDirection(column);
+
+  const queryParams = new URLSearchParams();
+  if (filters.search) queryParams.set("q", filters.search);
+  if (filters.status) queryParams.set("status", filters.status);
+  if (filters.technology) queryParams.set("technology", filters.technology);
+  if (filters.period !== "all") queryParams.set("period", filters.period);
+  queryParams.set("sort", column);
+  queryParams.set("dir", nextDirection);
+
+  return `/applications?${queryParams.toString()}`;
+}
+
+type ColumnHeaderProps = {
+  column: SortColumn;
+  current: { column: SortColumn; direction: SortDirection };
+  filters: ActiveFilters;
+  className?: string;
+};
+
+function ColumnHeader({ column, current, filters, className }: ColumnHeaderProps) {
+  const isActive = column === current.column;
+  return (
+    <th scope="col" className={`px-4 py-2 text-left text-xs font-medium ${className ?? ""}`}>
+      <Link
+        href={buildSortHref(column, current, filters)}
+        className="inline-flex items-center gap-1 text-slate-400 hover:text-slate-200"
+      >
+        {COLUMN_LABELS[column]}
+        {isActive && (
+          <span aria-hidden="true" className="text-sky-400">
+            {current.direction === "asc" ? "▲" : "▼"}
+          </span>
+        )}
+      </Link>
+    </th>
+  );
 }
 
 export default async function ApplicationsPage({ searchParams }: PageProps) {
@@ -64,14 +132,19 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
   const status = params.status && isApplicationStatus(params.status) ? params.status : undefined;
   const technology = params.technology || undefined;
   const period = params.period && isPeriodOption(params.period) ? params.period : "all";
-  const sort = params.sort && isSortOption(params.sort) ? params.sort : "statusChangedAt";
+  const sortColumn =
+    params.sort && isSortColumn(params.sort) ? params.sort : ("statusChangedAt" as SortColumn);
+  const sortDirection =
+    params.dir && isSortDirection(params.dir) ? params.dir : defaultSortDirection(sortColumn);
 
   const [applications, technologyNames] = await Promise.all([
-    listApplications(userId, { search, status, technology, period, sort }),
+    listApplications(userId, { search, status, technology, period, sortColumn, sortDirection }),
     listUserTechnologyNames(userId),
   ]);
 
   const hasActiveFilters = Boolean(search || status || technology || period !== "all");
+  const currentSort = { column: sortColumn, direction: sortDirection };
+  const activeFilters: ActiveFilters = { search, status, technology, period };
 
   return (
     <div className="flex flex-col gap-6">
@@ -87,11 +160,17 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
 
       {/* Formulaire GET classique : fonctionne sans JavaScript, les filtres
           vivent dans l'URL (partageables, navigables avec le bouton
-          "retour"), cohérent avec le reste de l'application. */}
+          "retour"), cohérent avec le reste de l'application. Le tri, lui,
+          vit dans les en-têtes de colonnes cliquables du tableau ci-dessous
+          (voir ColumnHeader) — ces deux champs cachés se contentent de le
+          préserver quand on soumet un filtre. */}
       <form
         method="GET"
         className="flex flex-wrap items-end gap-3 rounded-md border border-slate-800 bg-slate-900/40 p-4"
       >
+        <input type="hidden" name="sort" value={sortColumn} />
+        <input type="hidden" name="dir" value={sortDirection} />
+
         <div className="flex flex-col gap-1.5">
           <label htmlFor="q" className="text-xs font-medium text-slate-400">
             Recherche
@@ -162,24 +241,6 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
           </select>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="sort" className="text-xs font-medium text-slate-400">
-            Trier par
-          </label>
-          <select
-            id="sort"
-            name="sort"
-            defaultValue={sort}
-            className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {SORT_LABELS[option]}
-              </option>
-            ))}
-          </select>
-        </div>
-
         <button
           type="submit"
           className="rounded-md bg-slate-700 px-4 py-1.5 text-sm font-medium text-slate-50 transition-colors hover:bg-slate-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
@@ -212,32 +273,56 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
           )}
         </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-slate-800 rounded-md border border-slate-800">
-          {applications.map((application) => (
-            <li key={application.id}>
-              <Link
-                href={`/applications/${application.id}`}
-                className="flex flex-col items-start gap-2 px-4 py-4 transition-colors hover:bg-slate-900 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium text-slate-50">
-                    {application.position} — {application.company}
-                  </span>
-                  {application.technologies.length > 0 && (
-                    <span className="text-sm text-slate-400">
-                      {application.technologies.map((t) => t.technology.name).join(", ")}
-                    </span>
-                  )}
-                  <span className="text-xs text-slate-500">
-                    Candidature le {dateFormatter.format(application.createdAt)} · Relance le{" "}
+        <div className="overflow-x-auto rounded-md border border-slate-800">
+          <table className="w-full border-collapse text-sm">
+            <thead className="border-b border-slate-800">
+              <tr>
+                <ColumnHeader column="name" current={currentSort} filters={activeFilters} />
+                <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-slate-400">
+                  Technologies
+                </th>
+                <ColumnHeader column="createdAt" current={currentSort} filters={activeFilters} />
+                <ColumnHeader
+                  column="statusChangedAt"
+                  current={currentSort}
+                  filters={activeFilters}
+                />
+                <ColumnHeader
+                  column="status"
+                  current={currentSort}
+                  filters={activeFilters}
+                  className="text-right"
+                />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {applications.map((application) => (
+                <tr key={application.id} className="transition-colors hover:bg-slate-900">
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/applications/${application.id}`}
+                      className="font-medium text-slate-50 hover:underline"
+                    >
+                      {application.position} — {application.company}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-slate-400">
+                    {application.technologies.map((t) => t.technology.name).join(", ")}
+                  </td>
+                  <td className="px-4 py-3 text-slate-400">
+                    {dateFormatter.format(application.createdAt)}
+                  </td>
+                  <td className="px-4 py-3 text-slate-400">
                     {dateFormatter.format(application.statusChangedAt)}
-                  </span>
-                </div>
-                <StatusBadge status={application.status} />
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <StatusBadge status={application.status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

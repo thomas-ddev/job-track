@@ -12,31 +12,48 @@ import { ApplicationStatus, type Prisma } from "@/generated/prisma";
 export const PERIOD_OPTIONS = ["7", "30", "90", "all"] as const;
 export type PeriodOption = (typeof PERIOD_OPTIONS)[number];
 
-export const SORT_OPTIONS = ["statusChangedAt", "createdAt", "name", "status"] as const;
-export type SortOption = (typeof SORT_OPTIONS)[number];
+// Colonnes cliquables du tableau de /applications (en-têtes triables, voir
+// cette page). "name" trie sur entreprise puis poste.
+export const SORT_COLUMNS = ["name", "createdAt", "statusChangedAt", "status"] as const;
+export type SortColumn = (typeof SORT_COLUMNS)[number];
+
+export const SORT_DIRECTIONS = ["asc", "desc"] as const;
+export type SortDirection = (typeof SORT_DIRECTIONS)[number];
+
+// Direction appliquée par défaut au premier clic sur une colonne (avant
+// qu'elle ne devienne la colonne triée, où un second clic inverse la
+// direction) : les dates les plus récentes d'abord, le nom et le statut
+// dans l'ordre alphabétique/Kanban.
+export function defaultSortDirection(column: SortColumn): SortDirection {
+  return column === "createdAt" || column === "statusChangedAt" ? "desc" : "asc";
+}
 
 export type ApplicationFilters = {
   search?: string;
   status?: ApplicationStatus;
   technology?: string;
   period?: PeriodOption;
-  sort?: SortOption;
+  sortColumn?: SortColumn;
+  sortDirection?: SortDirection;
 };
 
 // Le statut MySQL (enum) se trie déjà naturellement dans l'ordre Kanban (sa
-// déclaration dans schema.prisma suit STATUS_ORDER), donc `status: "asc"`
-// correspond directement à "À postuler" → "Refusée".
-function sortToOrderBy(sort: SortOption | undefined): Prisma.ApplicationOrderByWithRelationInput[] {
-  switch (sort) {
+// déclaration dans schema.prisma suit STATUS_ORDER), donc trier par "status"
+// correspond directement à "À postuler" → "Refusée" (ou l'inverse en desc).
+function sortToOrderBy(
+  column: SortColumn,
+  direction: SortDirection,
+): Prisma.ApplicationOrderByWithRelationInput[] {
+  switch (column) {
     case "name":
-      return [{ company: "asc" }, { position: "asc" }];
+      return [{ company: direction }, { position: direction }];
     case "createdAt":
-      return [{ createdAt: "desc" }];
+      return [{ createdAt: direction }];
     case "status":
-      return [{ status: "asc" }];
+      return [{ status: direction }];
     case "statusChangedAt":
     default:
-      return [{ statusChangedAt: "desc" }];
+      return [{ statusChangedAt: direction }];
   }
 }
 
@@ -66,10 +83,13 @@ export function listApplications(userId: string, filters: ApplicationFilters = {
       : {}),
   };
 
+  const sortColumn = filters.sortColumn ?? "statusChangedAt";
+  const sortDirection = filters.sortDirection ?? defaultSortDirection(sortColumn);
+
   return db.application.findMany({
     where,
     include: { technologies: { include: { technology: true } } },
-    orderBy: sortToOrderBy(filters.sort),
+    orderBy: sortToOrderBy(sortColumn, sortDirection),
   });
 }
 

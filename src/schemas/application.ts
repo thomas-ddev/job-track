@@ -80,3 +80,25 @@ export const applicationSchema = z.object({
 });
 
 export type ApplicationInput = z.infer<typeof applicationSchema>;
+
+// Date de candidature et date de relance : éditables uniquement depuis la
+// fiche détaillée (pas à la création, où elles valent "maintenant" par
+// défaut) — validées séparément du reste du formulaire pour que
+// createApplicationAction, qui ne reçoit jamais ces champs, n'ait pas à s'en
+// préoccuper. Le format <input type="date"> (YYYY-MM-DD) est validé ici par
+// expression régulière plutôt que `z.iso.date()` pour renvoyer un message
+// d'erreur en français cohérent avec le reste du schéma.
+const dateInputValue = z
+  .string()
+  .trim()
+  .refine((value) => /^\d{4}-\d{2}-\d{2}$/.test(value), {
+    error: "Date invalide.",
+  })
+  .transform((value) => new Date(`${value}T00:00:00`));
+
+export const applicationDatesSchema = z.object({
+  createdAt: dateInputValue,
+  statusChangedAt: dateInputValue,
+});
+
+export type ApplicationDatesInput = z.infer<typeof applicationDatesSchema>;

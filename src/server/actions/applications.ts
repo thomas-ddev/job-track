@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 import { verifySession } from "@/lib/dal";
-import { applicationSchema } from "@/schemas/application";
+import { applicationDatesSchema, applicationSchema } from "@/schemas/application";
 import { ApplicationStatus, type Prisma } from "@/generated/prisma";
 
 export type ApplicationFormState =
@@ -17,6 +17,8 @@ export type ApplicationFormState =
         salary?: string[];
         contactEmail?: string[];
         status?: string[];
+        createdAt?: string[];
+        statusChangedAt?: string[];
       };
       message?: string;
     }
@@ -143,8 +145,21 @@ export async function updateApplicationAction(
     technologies: formData.get("technologies"),
   });
 
-  if (!validated.success) {
-    return { errors: validated.error.flatten().fieldErrors };
+  // Dates de candidature/relance : validées séparément (voir
+  // src/schemas/application.ts) puisque createApplicationAction, qui
+  // partage applicationSchema, ne les reçoit jamais.
+  const validatedDates = applicationDatesSchema.safeParse({
+    createdAt: formData.get("createdAt"),
+    statusChangedAt: formData.get("statusChangedAt"),
+  });
+
+  if (!validated.success || !validatedDates.success) {
+    return {
+      errors: {
+        ...(validated.success ? {} : validated.error.flatten().fieldErrors),
+        ...(validatedDates.success ? {} : validatedDates.error.flatten().fieldErrors),
+      },
+    };
   }
 
   const data = validated.data;
@@ -164,7 +179,12 @@ export async function updateApplicationAction(
         contactEmail: data.contactEmail,
         notes: data.notes,
         status: data.status,
-        ...(statusChanged ? { statusChangedAt: new Date() } : {}),
+        createdAt: validatedDates.data.createdAt,
+        // Champ désormais directement éditable (contrairement au Kanban, qui
+        // n'a pas de sélecteur de date et continue de le faire automatiquement
+        // — voir changeApplicationStatusAction) : on prend la valeur soumise
+        // telle quelle, sans bump automatique implicite qui l'écraserait.
+        statusChangedAt: validatedDates.data.statusChangedAt,
         technologies: {
           deleteMany: {},
           create: technologyIds.map((technologyId) => ({ technologyId })),

@@ -9,6 +9,7 @@ import {
 } from "@/server/actions/applications";
 import { extractJobPostingAction } from "@/server/actions/job-extraction";
 import { extractionToNotes } from "@/lib/job-posting-extraction";
+import { formatDateInputValue } from "@/lib/dates";
 import { FormField } from "@/components/ui/form-field";
 import { TextareaField } from "@/components/ui/textarea-field";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -26,6 +27,8 @@ type ApplicationFormValues = {
   notes: string | null;
   status: ApplicationStatus;
   technologies: string[];
+  createdAt: Date;
+  statusChangedAt: Date;
 };
 
 type ApplicationFormProps =
@@ -229,6 +232,27 @@ export function ApplicationForm({ mode, application }: ApplicationFormProps) {
           </select>
         </div>
       </div>
+
+      {mode === "edit" && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            id="createdAt"
+            name="createdAt"
+            label="Date de candidature"
+            type="date"
+            defaultValue={formatDateInputValue(application.createdAt)}
+            errors={state?.errors?.createdAt}
+          />
+          <FormField
+            id="statusChangedAt"
+            name="statusChangedAt"
+            label="Date de relance"
+            type="date"
+            defaultValue={formatDateInputValue(application.statusChangedAt)}
+            errors={state?.errors?.statusChangedAt}
+          />
+        </div>
+      )}
 
       <FormField
         key={`technologies-${prefillKey}`}
