@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   createApplicationAction,
   updateApplicationAction,
   type ApplicationFormState,
 } from "@/server/actions/applications";
+import { extractJobPostingAction } from "@/server/actions/job-extraction";
+import { extractionToNotes } from "@/lib/job-posting-extraction";
 import { FormField } from "@/components/ui/form-field";
 import { TextareaField } from "@/components/ui/textarea-field";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -37,35 +39,112 @@ export function ApplicationForm({ mode, application }: ApplicationFormProps) {
     undefined,
   );
 
+  // Pré-remplissage assisté par IA (mode création uniquement) : on garde les
+  // champs extraits à part plutôt que de piloter les <input> en contrôlé, et
+  // on force leur remontage via `prefillKey` pour rafraîchir leur
+  // `defaultValue` sans renoncer au pattern non-contrôlé du reste du
+  // formulaire.
+  const [jobUrlInput, setJobUrlInput] = useState("");
+  const [prefill, setPrefill] = useState<{
+    company: string;
+    position: string;
+    salary: number | undefined;
+    technologies: string;
+    notes: string;
+  } | null>(null);
+  const [prefillKey, setPrefillKey] = useState(0);
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
+
+  async function handleExtract() {
+    setExtracting(true);
+    setExtractError(null);
+    const result = await extractJobPostingAction(jobUrlInput);
+    setExtracting(false);
+
+    if (!result.success) {
+      setExtractError(result.error);
+      return;
+    }
+
+    setPrefill({
+      company: result.data.company ?? "",
+      position: result.data.position ?? "",
+      salary: result.data.salary ?? undefined,
+      technologies: result.data.technologies.join(", "),
+      notes: extractionToNotes(result.data),
+    });
+    setPrefillKey((key) => key + 1);
+  }
+
   return (
     <form action={formAction} className="flex max-w-xl flex-col gap-4">
       {mode === "edit" && <input type="hidden" name="id" value={application.id} />}
 
+      {mode === "create" && (
+        <div className="flex flex-col gap-2 rounded-md border border-slate-700 bg-slate-800/50 p-3">
+          <label htmlFor="extract-url" className="text-sm font-medium text-slate-200">
+            Pré-remplir depuis une offre en ligne (LinkedIn, Jobgether, Free-Work...)
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="extract-url"
+              type="url"
+              placeholder="https://..."
+              value={jobUrlInput}
+              onChange={(event) => setJobUrlInput(event.target.value)}
+              className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-50 outline-none placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-sky-500"
+            />
+            <button
+              type="button"
+              onClick={handleExtract}
+              disabled={extracting || jobUrlInput.trim().length === 0}
+              className="shrink-0 rounded-md bg-sky-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            >
+              {extracting ? "Extraction..." : "Extraire"}
+            </button>
+          </div>
+          {extractError && (
+            <p role="alert" className="text-sm text-red-400">
+              {extractError}
+            </p>
+          )}
+          {prefill && !extractError && (
+            <p className="text-sm text-emerald-400">
+              Champs pré-remplis ci-dessous : vérifie-les avant de valider.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField
+          key={`company-${prefillKey}`}
           id="company"
           name="company"
           label="Entreprise"
-          defaultValue={application?.company}
+          defaultValue={prefill?.company ?? application?.company}
           errors={state?.errors?.company}
         />
         <FormField
+          key={`position-${prefillKey}`}
           id="position"
           name="position"
           label="Poste"
-          defaultValue={application?.position}
+          defaultValue={prefill?.position ?? application?.position}
           errors={state?.errors?.position}
         />
       </div>
 
       <FormField
+        key={`jobUrl-${prefillKey}`}
         id="jobUrl"
         name="jobUrl"
         label="Lien de l'offre"
         type="url"
         required={false}
         placeholder="https://..."
-        defaultValue={application?.jobUrl ?? undefined}
+        defaultValue={(prefill ? jobUrlInput : application?.jobUrl) ?? undefined}
         errors={state?.errors?.jobUrl}
       />
 
@@ -90,12 +169,13 @@ export function ApplicationForm({ mode, application }: ApplicationFormProps) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField
+          key={`salary-${prefillKey}`}
           id="salary"
           name="salary"
           label="Salaire annuel brut (€)"
           type="number"
           required={false}
-          defaultValue={application?.salary ?? undefined}
+          defaultValue={prefill?.salary ?? application?.salary ?? undefined}
           errors={state?.errors?.salary}
         />
 
@@ -119,19 +199,21 @@ export function ApplicationForm({ mode, application }: ApplicationFormProps) {
       </div>
 
       <FormField
+        key={`technologies-${prefillKey}`}
         id="technologies"
         name="technologies"
         label="Technologies (séparées par des virgules)"
         required={false}
         placeholder="React, Node.js, PostgreSQL"
-        defaultValue={application?.technologies.join(", ")}
+        defaultValue={prefill ? prefill.technologies : application?.technologies.join(", ")}
       />
 
       <TextareaField
+        key={`notes-${prefillKey}`}
         id="notes"
         name="notes"
         label="Notes"
-        defaultValue={application?.notes ?? undefined}
+        defaultValue={prefill?.notes ?? application?.notes ?? undefined}
       />
 
       {state?.message && (
