@@ -43,6 +43,7 @@ document.getElementById("add-tab").addEventListener("click", async () => {
   addButton.disabled = true;
 
   const result = await browser.runtime.sendMessage({ type: "ADD_CURRENT_TAB" });
+  console.log("[JobTrack] Résultat reçu du background :", result);
 
   addButton.disabled = false;
 

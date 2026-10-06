@@ -59,7 +59,10 @@ export async function POST(request: Request) {
     messages: buildExtractionMessages(pageText, parsed.data.url),
   })
     .then(parseExtractionResponse)
-    .catch(() => null);
+    .catch((error: unknown) => {
+      console.error("[/api/extension/extract] Extraction Groq échouée :", error);
+      return null;
+    });
 
   if (!extracted) {
     return NextResponse.json(
@@ -91,7 +94,10 @@ export async function POST(request: Request) {
 
       return created;
     })
-    .catch(() => null);
+    .catch((error: unknown) => {
+      console.error("[/api/extension/extract] Création de la candidature échouée :", error);
+      return null;
+    });
 
   if (!application) {
     return NextResponse.json(

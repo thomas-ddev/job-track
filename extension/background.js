@@ -1,4 +1,5 @@
 const API_BASE = "https://jobs.thomasdubrez.fr";
+const LOG_PREFIX = "[JobTrack]";
 
 async function getToken() {
   const { apiToken } = await browser.storage.local.get("apiToken");
@@ -18,8 +19,11 @@ function scrapeJobPage() {
 }
 
 async function addCurrentTabToJobTrack() {
+  console.log(`${LOG_PREFIX} Démarrage de l'ajout...`);
+
   const token = await getToken();
   if (!token) {
+    console.error(`${LOG_PREFIX} Aucun jeton configuré.`);
     return {
       ok: false,
       error: "Aucun jeton configuré. Renseigne-le dans le popup de l'extension.",
@@ -28,6 +32,7 @@ async function addCurrentTabToJobTrack() {
 
   const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (!activeTab?.id) {
+    console.error(`${LOG_PREFIX} Aucun onglet actif détecté.`);
     return { ok: false, error: "Impossible de déterminer l'onglet actif." };
   }
 
@@ -38,16 +43,24 @@ async function addCurrentTabToJobTrack() {
       func: scrapeJobPage,
     });
     scraped = result?.result;
-  } catch {
+    console.log(
+      `${LOG_PREFIX} Page scrapée :`,
+      scraped?.url,
+      `(${scraped?.pageText?.length ?? 0} caractères)`,
+    );
+  } catch (error) {
+    console.error(`${LOG_PREFIX} Échec du scraping de la page :`, error);
     return { ok: false, error: "Impossible de lire le contenu de cette page." };
   }
 
   if (!scraped?.pageText) {
+    console.error(`${LOG_PREFIX} Page sans texte exploitable.`);
     return { ok: false, error: "Cette page ne contient pas de texte exploitable." };
   }
 
   let response;
   try {
+    console.log(`${LOG_PREFIX} Envoi à ${API_BASE}/api/extension/extract...`);
     response = await fetch(`${API_BASE}/api/extension/extract`, {
       method: "POST",
       headers: {
@@ -56,17 +69,22 @@ async function addCurrentTabToJobTrack() {
       },
       body: JSON.stringify({ url: scraped.url, pageText: scraped.pageText }),
     });
-  } catch {
+  } catch (error) {
+    console.error(`${LOG_PREFIX} Impossible de contacter JobTrack :`, error);
     return { ok: false, error: "Impossible de contacter JobTrack." };
   }
 
+  console.log(`${LOG_PREFIX} Réponse serveur : ${response.status}`);
+
   if (!response.ok) {
     const body = await response.json().catch(() => null);
+    console.error(`${LOG_PREFIX} Erreur serveur :`, response.status, body);
     return { ok: false, error: body?.error ?? `Erreur serveur (${response.status}).` };
   }
 
   const data = await response.json();
   const appUrl = `${API_BASE}${data.path}`;
+  console.log(`${LOG_PREFIX} Candidature créée :`, appUrl);
   await browser.tabs.create({ url: appUrl });
 
   return { ok: true, url: appUrl };

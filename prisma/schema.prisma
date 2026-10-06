@@ -57,7 +57,10 @@ model Application {
   userId      String
   company     String
   position    String
-  jobUrl      String?
+  // @db.Text : les URL d'offres trackées (LinkedIn notamment) dépassent
+  // largement les 191 caractères de la limite VARCHAR par défaut de Prisma,
+  // ce qui faisait échouer silencieusement l'insertion.
+  jobUrl      String?           @db.Text
   // Salaire annuel brut, en unité entière de la devise (ex. euros).
   // Un entier évite les pièges d'arrondi du type Decimal pour une donnée
   // qui n'a pas besoin de précision inférieure à l'unité.

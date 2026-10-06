@@ -49,6 +49,13 @@ changement de statut, des rappels de relance, et un tableau de bord pour objecti
   réponse, répartition par statut (graphiques Recharts).
 - **Rappels de relance** : un script planifié détecte les candidatures sans nouvelles depuis plus de
   10 jours et génère une notification dans l'application.
+- **Pré-remplissage assisté par IA** : colle le lien d'une offre (LinkedIn, Jobgether, Free-Work,
+  Collective, Freelance-Informatique...) et un modèle Groq en extrait entreprise, poste, lieu,
+  contrat, salaire, technologies et résumé pour pré-remplir le formulaire de création.
+- **Extension Firefox** (`extension/`) : ajoute en un clic l'offre affichée dans l'onglet actif,
+  y compris sur des pages qui nécessitent une connexion (LinkedIn Jobs...) — l'extension lit le
+  texte déjà affiché dans le navigateur plutôt que de refaire une requête serveur qui se
+  heurterait au mur de connexion. Voir [`extension/README.md`](extension/README.md).
 - **Compte de démonstration** pré-rempli avec une vingtaine de candidatures réalistes.
 
 ## Captures d'écran
@@ -60,6 +67,10 @@ changement de statut, des rappels de relance, et un tableau de bord pour objecti
 | Candidatures (recherche et filtres)                          | Fiche détaillée (historique)                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------- |
 | ![Liste des candidatures](docs/screenshots/applications.png) | ![Fiche candidature](docs/screenshots/application-detail.png) |
+
+| Nouvelle candidature (pré-remplissage IA)                     | Réglages (jeton de l'extension)            |
+| ------------------------------------------------------------- | ------------------------------------------ |
+| ![Nouvelle candidature](docs/screenshots/new-application.png) | ![Réglages](docs/screenshots/settings.png) |
 
 ## Stack technique
 
@@ -146,6 +157,10 @@ Générer un secret pour Auth.js et le placer dans `AUTH_SECRET` :
 openssl rand -base64 32
 ```
 
+Pour le pré-remplissage assisté par IA, renseigner une ou plusieurs clés
+[Groq](https://console.groq.com/keys) (gratuites) dans `GROQ_API_KEYS` (séparées par des virgules).
+Sans clé, le reste de l'application fonctionne normalement — seul le bouton "Extraire" échoue.
+
 ### 5. Appliquer les migrations et générer le client Prisma
 
 ```bash
@@ -195,6 +210,8 @@ npm run reminders       # Détection des candidatures à relancer, génère des 
 npm run test            # Tests unitaires (Vitest)
 npm run test:watch      # Tests unitaires en mode watch
 npm run test:e2e        # Test de bout en bout (Playwright)
+
+./scripts/build-extension.sh  # Empaquette extension/ en .xpi (voir extension/README.md)
 ```
 
 ## Structure du projet
@@ -215,6 +232,7 @@ jobtrack/
 │   ├── schemas/              # Schémas de validation Zod
 │   └── generated/prisma/    # Client Prisma généré (non versionné)
 ├── scripts/                  # Scripts Node indépendants (ex. rappels de relance)
+├── extension/                 # Extension Firefox (ajout d'une offre en un clic)
 ├── e2e/                       # Test de bout en bout Playwright
 ├── docs/
 │   └── CONCEPTION.md         # Dossier de conception détaillé
