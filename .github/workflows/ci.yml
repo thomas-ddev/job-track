@@ -26,6 +26,10 @@ jobs:
       # types importés depuis "@/generated/prisma".
       - run: npx prisma generate
 
+      # Next.js génère les types de routes/layouts (ex. LayoutProps<"/">)
+      # dans .next/types/ ; tsc en a besoin mais ne les génère pas lui-même.
+      - run: npx next typegen
+
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
