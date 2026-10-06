@@ -2,12 +2,13 @@ import Link from "next/link";
 
 import { verifySession } from "@/lib/dal";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 // Le groupe (app) regroupe toutes les pages qui nécessitent une session.
 // verifySession() redirige vers /login si l'utilisateur n'est pas authentifié
 // — voir src/lib/dal.ts pour le détail de cette garantie.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  await verifySession();
+  const { userId } = await verifySession();
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -24,7 +25,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Kanban
           </Link>
         </nav>
-        <LogoutButton />
+        <div className="flex items-center gap-3">
+          <NotificationBell userId={userId} />
+          <LogoutButton />
+        </div>
       </header>
       <main className="px-6 py-8">{children}</main>
     </div>
