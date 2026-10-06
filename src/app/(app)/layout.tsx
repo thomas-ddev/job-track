@@ -12,8 +12,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <header className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
-        <nav className="flex items-center gap-6">
+      <header className="flex flex-col gap-3 border-b border-slate-800 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <span className="text-lg font-semibold text-slate-50">JobTrack</span>
           <Link href="/dashboard" className="text-sm text-slate-300 hover:text-slate-50">
             Tableau de bord
@@ -30,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <LogoutButton />
         </div>
       </header>
-      <main className="px-6 py-8">{children}</main>
+      <main className="px-4 py-8 sm:px-6">{children}</main>
     </div>
   );
 }
