@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Lint, vérification des types et tests unitaires : rapides, sans base de
+  # données (la logique métier testée par Vitest est volontairement pure,
+  # voir src/lib/stats.ts et src/lib/reminders.ts).
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Le client Prisma généré (src/generated/prisma) n'est pas versionné
+      # (voir .gitignore) : ESLint et tsc en ont besoin pour résoudre les
+      # types importés depuis "@/generated/prisma".
+      - run: npx prisma generate
+
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+
+  # Test de bout en bout du parcours critique (connexion -> création d'une
+  # candidature -> déplacement dans le Kanban). Nécessite une vraie base de
+  # données : un service MariaDB est démarré pour la durée du job, avec le
+  # même dialecte SQL que l'environnement de développement local (XAMPP).
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+          MARIADB_DATABASE: jobtrack
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -u root"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: mysql://root:@127.0.0.1:3306/jobtrack
+      # Secret de test fixe, sans valeur sensible réelle : suffisant pour
+      # signer des sessions JWT le temps du job, pas destiné à un déploiement.
+      AUTH_SECRET: ci-only-secret-not-used-in-production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+
+      - name: Installer les navigateurs Playwright
+        run: npx playwright install --with-deps chromium
+
+      - run: npx playwright test
+
+      - name: Publier le rapport Playwright en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
