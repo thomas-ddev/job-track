@@ -6,7 +6,9 @@ import {
   listApplications,
   listUserTechnologyNames,
   PERIOD_OPTIONS,
+  SORT_OPTIONS,
   type PeriodOption,
+  type SortOption,
 } from "@/server/data/applications";
 import { StatusBadge } from "@/components/applications/status-badge";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/application-status";
@@ -23,12 +25,22 @@ const PERIOD_LABELS: Record<PeriodOption, string> = {
   all: "Toutes les périodes",
 };
 
+const SORT_LABELS: Record<SortOption, string> = {
+  statusChangedAt: "Date de relance",
+  createdAt: "Date de création",
+  name: "Nom",
+  status: "Statut",
+};
+
+const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
+
 type PageProps = {
   searchParams: Promise<{
     q?: string;
     status?: string;
     technology?: string;
     period?: string;
+    sort?: string;
   }>;
 };
 
@@ -40,6 +52,10 @@ function isPeriodOption(value: string): value is PeriodOption {
   return (PERIOD_OPTIONS as readonly string[]).includes(value);
 }
 
+function isSortOption(value: string): value is SortOption {
+  return (SORT_OPTIONS as readonly string[]).includes(value);
+}
+
 export default async function ApplicationsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const { userId } = await verifySession();
@@ -48,9 +64,10 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
   const status = params.status && isApplicationStatus(params.status) ? params.status : undefined;
   const technology = params.technology || undefined;
   const period = params.period && isPeriodOption(params.period) ? params.period : "all";
+  const sort = params.sort && isSortOption(params.sort) ? params.sort : "statusChangedAt";
 
   const [applications, technologyNames] = await Promise.all([
-    listApplications(userId, { search, status, technology, period }),
+    listApplications(userId, { search, status, technology, period, sort }),
     listUserTechnologyNames(userId),
   ]);
 
@@ -145,6 +162,24 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
           </select>
         </div>
 
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="sort" className="text-xs font-medium text-slate-400">
+            Trier par
+          </label>
+          <select
+            id="sort"
+            name="sort"
+            defaultValue={sort}
+            className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {SORT_LABELS[option]}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <button
           type="submit"
           className="rounded-md bg-slate-700 px-4 py-1.5 text-sm font-medium text-slate-50 transition-colors hover:bg-slate-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
@@ -193,6 +228,10 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
                       {application.technologies.map((t) => t.technology.name).join(", ")}
                     </span>
                   )}
+                  <span className="text-xs text-slate-500">
+                    Candidature le {dateFormatter.format(application.createdAt)} · Relance le{" "}
+                    {dateFormatter.format(application.statusChangedAt)}
+                  </span>
                 </div>
                 <StatusBadge status={application.status} />
               </Link>

@@ -164,6 +164,7 @@ export async function updateApplicationAction(
         contactEmail: data.contactEmail,
         notes: data.notes,
         status: data.status,
+        ...(statusChanged ? { statusChangedAt: new Date() } : {}),
         technologies: {
           deleteMany: {},
           create: technologyIds.map((technologyId) => ({ technologyId })),
@@ -202,7 +203,10 @@ export async function changeApplicationStatusAction(
   }
 
   await db.$transaction([
-    db.application.update({ where: { id: applicationId }, data: { status: nextStatus } }),
+    db.application.update({
+      where: { id: applicationId },
+      data: { status: nextStatus, statusChangedAt: new Date() },
+    }),
     db.statusEvent.create({
       data: { applicationId, fromStatus: existing.status, toStatus: nextStatus },
     }),

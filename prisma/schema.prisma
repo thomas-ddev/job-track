@@ -71,6 +71,11 @@ model Application {
   status      ApplicationStatus @default(TO_APPLY)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+  // Contrairement à `updatedAt` (bumpé par Prisma sur TOUTE écriture, y
+  // compris éditer les notes), ce champ n'est mis à jour explicitement que
+  // lorsque `status` change (voir src/server/actions/applications.ts) : sert
+  // de base au tri "date de relance" et, à terme, au calcul des rappels.
+  statusChangedAt DateTime       @default(now())
 
   user          User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   technologies  ApplicationTechnology[]

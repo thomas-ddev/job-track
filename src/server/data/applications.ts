@@ -12,12 +12,33 @@ import { ApplicationStatus, type Prisma } from "@/generated/prisma";
 export const PERIOD_OPTIONS = ["7", "30", "90", "all"] as const;
 export type PeriodOption = (typeof PERIOD_OPTIONS)[number];
 
+export const SORT_OPTIONS = ["statusChangedAt", "createdAt", "name", "status"] as const;
+export type SortOption = (typeof SORT_OPTIONS)[number];
+
 export type ApplicationFilters = {
   search?: string;
   status?: ApplicationStatus;
   technology?: string;
   period?: PeriodOption;
+  sort?: SortOption;
 };
+
+// Le statut MySQL (enum) se trie déjà naturellement dans l'ordre Kanban (sa
+// déclaration dans schema.prisma suit STATUS_ORDER), donc `status: "asc"`
+// correspond directement à "À postuler" → "Refusée".
+function sortToOrderBy(sort: SortOption | undefined): Prisma.ApplicationOrderByWithRelationInput[] {
+  switch (sort) {
+    case "name":
+      return [{ company: "asc" }, { position: "asc" }];
+    case "createdAt":
+      return [{ createdAt: "desc" }];
+    case "status":
+      return [{ status: "asc" }];
+    case "statusChangedAt":
+    default:
+      return [{ statusChangedAt: "desc" }];
+  }
+}
 
 function periodToCutoffDate(period: PeriodOption | undefined): Date | undefined {
   if (!period || period === "all") return undefined;
@@ -48,7 +69,7 @@ export function listApplications(userId: string, filters: ApplicationFilters = {
   return db.application.findMany({
     where,
     include: { technologies: { include: { technology: true } } },
-    orderBy: { updatedAt: "desc" },
+    orderBy: sortToOrderBy(filters.sort),
   });
 }
 

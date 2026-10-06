@@ -15,7 +15,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen flex-col bg-slate-950">
       <header className="flex flex-col gap-3 border-b border-slate-800 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <span className="text-lg font-semibold text-slate-50">JobTrack</span>
+          <Link href="/" className="text-lg font-semibold text-slate-50 hover:text-slate-200">
+            JobTrack
+          </Link>
           <Link href="/dashboard" className="text-sm text-slate-300 hover:text-slate-50">
             Tableau de bord
           </Link>
