@@ -14,6 +14,7 @@ import {
   type SortDirection,
 } from "@/server/data/applications";
 import { StatusBadge } from "@/components/applications/status-badge";
+import { ExternalLinkIcon } from "@/components/ui/external-link-icon";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/application-status";
 import { ApplicationStatus } from "@/generated/prisma";
 
@@ -299,12 +300,26 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
               {applications.map((application) => (
                 <tr key={application.id} className="transition-colors hover:bg-slate-900">
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/applications/${application.id}`}
-                      className="font-medium text-slate-50 hover:underline"
-                    >
-                      {application.position} — {application.company}
-                    </Link>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Link
+                        href={`/applications/${application.id}`}
+                        className="font-medium text-slate-50 hover:underline"
+                      >
+                        {application.position} — {application.company}
+                      </Link>
+                      <a
+                        href={`/applications/${application.id}`}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        title="Ouvrir cette candidature dans un nouvel onglet"
+                        className="text-slate-500 hover:text-sky-400"
+                      >
+                        <span className="sr-only">
+                          Ouvrir cette candidature dans un nouvel onglet
+                        </span>
+                        <ExternalLinkIcon className="size-3.5" />
+                      </a>
+                    </span>
                   </td>
                   <td className="max-w-xs px-4 py-3 text-slate-400">
                     {application.technologies.map((t) => t.technology.name).join(", ")}
@@ -316,7 +331,17 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
                     {dateFormatter.format(application.statusChangedAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <StatusBadge status={application.status} />
+                    <span className="inline-flex items-center gap-1.5">
+                      {application.autoRejected && (
+                        <span
+                          className="text-xs text-slate-500"
+                          title="Marquée refusée automatiquement après 30 jours sans changement de statut."
+                        >
+                          (auto)
+                        </span>
+                      )}
+                      <StatusBadge status={application.status} />
+                    </span>
                   </td>
                 </tr>
               ))}

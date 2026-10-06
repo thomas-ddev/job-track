@@ -110,7 +110,7 @@ export async function createApplicationAction(
   });
 
   revalidatePath("/applications");
-  redirect(`/applications/${application.id}`);
+  redirect(`/applications/${application.id}?created=1`);
 }
 
 export async function updateApplicationAction(
@@ -201,7 +201,7 @@ export async function updateApplicationAction(
 
   revalidatePath("/applications");
   revalidatePath(`/applications/${id}`);
-  redirect(`/applications/${id}`);
+  redirect(`/applications/${id}?saved=1`);
 }
 
 // Utilisée par le Kanban (phase 4) comme par un futur changement de statut
@@ -256,4 +256,43 @@ export async function deleteApplicationAction(formData: FormData): Promise<void>
 
   revalidatePath("/applications");
   redirect("/applications");
+}
+
+const AUTO_REJECT_THRESHOLD_DAYS = 30;
+
+// Balayage "paresseux" (pas de cron) : une candidature "Envoyée" sans le
+// moindre changement de statut depuis plus de 30 jours est considérée comme
+// n'ayant pas eu de suite et passe automatiquement à "Refusée". Appelée
+// depuis le layout du groupe (app) (voir src/app/(app)/layout.tsx), donc
+// évaluée à chaque navigation plutôt que sur une tâche planifiée — dans
+// l'esprit du reste du projet, qui évite l'infra supplémentaire quand une
+// vérification au chargement suffit. `autoRejected: true` permet de
+// distinguer ce passage automatique d'un vrai refus pour ne pas gonfler le
+// taux de réponse (voir src/server/data/stats.ts).
+export async function autoRejectStaleApplications(userId: string): Promise<void> {
+  const cutoff = new Date(Date.now() - AUTO_REJECT_THRESHOLD_DAYS * 24 * 60 * 60 * 1000);
+
+  const stale = await db.application.findMany({
+    where: { userId, status: ApplicationStatus.APPLIED, statusChangedAt: { lt: cutoff } },
+    select: { id: true },
+  });
+  if (stale.length === 0) return;
+
+  const ids = stale.map((application) => application.id);
+  const now = new Date();
+
+  await db.$transaction([
+    db.application.updateMany({
+      where: { id: { in: ids } },
+      data: { status: ApplicationStatus.REJECTED, statusChangedAt: now, autoRejected: true },
+    }),
+    db.statusEvent.createMany({
+      data: ids.map((applicationId) => ({
+        applicationId,
+        fromStatus: ApplicationStatus.APPLIED,
+        toStatus: ApplicationStatus.REJECTED,
+        createdAt: now,
+      })),
+    }),
+  ]);
 }

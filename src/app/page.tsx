@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { getOptionalSession } from "@/lib/dal";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { AnimatedBackground } from "@/components/layout/animated-background";
+import { Logo } from "@/components/layout/logo";
 
 const FEATURES = [
   {
@@ -26,10 +28,14 @@ export default async function Home() {
   const session = await getOptionalSession();
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-slate-950">
+      <AnimatedBackground />
       <main className="flex flex-1 flex-col items-center gap-16 px-4 py-20 text-center">
         <div className="flex flex-col items-center gap-6">
-          <h1 className="text-4xl font-semibold text-slate-50 sm:text-5xl">JobTrack</h1>
+          <div className="flex items-center gap-3">
+            <Logo className="h-12 w-12" />
+            <h1 className="text-4xl font-semibold text-slate-50 sm:text-5xl">JobTrack</h1>
+          </div>
           <p className="max-w-lg text-slate-400">
             Suivez vos candidatures, votre pipeline Kanban et vos statistiques de recherche
             d&apos;emploi en un seul endroit.

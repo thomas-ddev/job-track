@@ -468,6 +468,43 @@ produit fini plutôt que comme un exercice guidé par phases :
 - **README** débarrassé de la numérotation par "phase" (qui a sa place dans ce document de conception,
   pensé comme un journal, mais pas dans la vitrine du projet) et complété d'un résumé en anglais.
 
+### Mise à jour — déploiement, extraction IA, extension navigateur
+
+- **Déploiement en production** sur un VPS existant (`jobs.thomasdubrez.fr`) : Node 22 installé en
+  binaire isolé (pas d'apt, serveur mutualisé), dépôt bare + hook `post-receive` pour déployer par
+  `git push`, service `systemd --user` (pas besoin de root pour redéployer), nginx + Let's Encrypt.
+- **Pré-remplissage assisté par IA** (`src/lib/job-posting-extraction.ts`, `src/lib/groq.ts`) : colle
+  une URL d'offre, le serveur récupère la page, la réduit en texte et demande à un modèle Groq
+  d'en extraire les champs structurés. `z.url()` seul acceptant aussi `javascript:`/`data:`, le champ
+  "Lien de l'offre" est restreint à http(s) dès lors qu'il est rendu comme lien cliquable.
+- **Extension Firefox** (`extension/`) + jeton API (`apiTokenHash`, hashé bcrypt) : contourne le mur de
+  connexion de sites comme LinkedIn en laissant l'extension lire le texte déjà affiché dans le
+  navigateur de l'utilisateur, plutôt que de refaire une requête serveur qui se heurterait à
+  l'authentification du site tiers.
+- **`/applications` en tableau triable** par en-têtes de colonnes cliquables (nom, date de
+  candidature, date de relance, statut), avec date de candidature et date de relance éditables
+  directement sur la fiche.
+- **Refus automatique après 30 jours** sans changement de statut sur une candidature "Envoyée"
+  (`autoRejectStaleApplications`, appelée depuis le layout `(app)` à chaque navigation — pas de tâche
+  planifiée dédiée). Un champ `autoRejected` distingue ce passage automatique d'un vrai refus, pour
+  ne pas fausser le taux de réponse du tableau de bord.
+- **Modernisation ciblée de l'UI** : logo dessiné à la main (`src/components/layout/logo.tsx`, aussi
+  servi comme favicon via `app/icon.svg`), fond animé discret (réseau de particules en Canvas,
+  respecte `prefers-reduced-motion`) sur les pages publiques uniquement — pas sur les pages internes
+  denses en données, où ça nuirait à la lisibilité. Notifications navigateur opt-in (`Notification`
+  API, limitées au navigateur ouvert — pas de vraie Web Push, qui aurait demandé un service worker et
+  des clés VAPID pour un gain hors scope ici) pour relancer sur une candidature sans réponse ou une
+  semaine sans ajout.
+- **Double soumission corrigée** : entre un clic et la mise à jour de `disabled` par le re-render
+  React, il y avait une fenêtre où un double-clic rapide pouvait déclencher deux soumissions (deux
+  candidatures créées en double). `SubmitButton` porte maintenant une ref mutée de façon synchrone au
+  clic, fiable dès le deuxième clic même sans re-render. En complément, une bannière de confirmation
+  (`?saved=1`/`?created=1` après redirection) rend visible qu'un enregistrement a bien abouti.
+- **Thème clair/sombre envisagé puis écarté** : toute l'interface utilise des classes Tailwind codées
+  en dur (`bg-slate-950`, etc.) plutôt que des tokens sémantiques. Un vrai thème aurait demandé de
+  reprendre la palette d'une quinzaine de fichiers de composants — trop pour un ajout "si le temps le
+  permet" ; notée comme piste future plutôt que livrée à moitié.
+
 ## 3. Modèle de données
 
 ```mermaid
@@ -665,6 +702,10 @@ des technologies en relation N—N plutôt qu'en colonne tableau.
 
 ## 7. Pistes d'amélioration futures
 
+- **Thème clair/sombre**, via des tokens de couleur sémantiques plutôt que des classes `slate-*`
+  codées en dur — nécessite de reprendre la palette de l'ensemble des composants.
+- **Vraie Web Push** (service worker + clés VAPID + abonnements stockés côté serveur) pour que les
+  notifications de relance fonctionnent même navigateur fermé, pas seulement onglet ouvert.
 - **Notifications par e-mail**, en plus des notifications in-app, pour les rappels de relance — utile
   pour un usage réel où l'utilisateur ne consulte pas l'application tous les jours.
 - **Export des candidatures en CSV**, pour une analyse externe (tableur) ou une sauvegarde personnelle

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 
 import { verifySession } from "@/lib/dal";
-import { getDashboardStats } from "@/server/data/stats";
+import { getDashboardStats, getNotificationSignals } from "@/server/data/stats";
 import { StatTile } from "@/components/dashboard/stat-tile";
 import { WeeklyChart } from "@/components/dashboard/weekly-chart";
 import { StatusBreakdownChart } from "@/components/dashboard/status-breakdown-chart";
+import { BrowserNotificationManager } from "@/components/notifications/browser-notification-manager";
 
 export const metadata: Metadata = {
   title: "Tableau de bord — JobTrack",
@@ -15,7 +16,10 @@ const dayFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }
 
 export default async function DashboardPage() {
   const { userId } = await verifySession();
-  const stats = await getDashboardStats(userId);
+  const [stats, notificationSignals] = await Promise.all([
+    getDashboardStats(userId),
+    getNotificationSignals(userId),
+  ]);
 
   if (stats.totalApplications === 0) {
     return (
@@ -28,6 +32,13 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <BrowserNotificationManager
+        lastApplicationCreatedAt={
+          notificationSignals.lastApplicationCreatedAt?.toISOString() ?? null
+        }
+        staleAppliedCount={notificationSignals.staleAppliedCount}
+      />
+
       <h1 className="text-2xl font-semibold text-slate-50">Tableau de bord</h1>
 
       <div className="grid gap-4 sm:grid-cols-3">

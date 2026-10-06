@@ -76,6 +76,12 @@ model Application {
   // lorsque `status` change (voir src/server/actions/applications.ts) : sert
   // de base au tri "date de relance" et, à terme, au calcul des rappels.
   statusChangedAt DateTime       @default(now())
+  // Vrai si le passage à REJECTED vient du balayage automatique (30 jours
+  // sans changement de statut pendant que la candidature est "Envoyée", voir
+  // autoRejectStaleApplications) plutôt que d'une action de l'utilisateur.
+  // Exclu du calcul du taux de réponse : ce n'est pas une vraie réponse de
+  // l'entreprise, juste l'écoulement du temps.
+  autoRejected    Boolean        @default(false)
 
   user          User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   technologies  ApplicationTechnology[]

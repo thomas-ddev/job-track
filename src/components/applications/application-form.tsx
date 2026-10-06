@@ -11,6 +11,7 @@ import { extractJobPostingAction } from "@/server/actions/job-extraction";
 import { extractionToNotes } from "@/lib/job-posting-extraction";
 import { formatDateInputValue } from "@/lib/dates";
 import { FormField } from "@/components/ui/form-field";
+import { ExternalLinkIcon } from "@/components/ui/external-link-icon";
 import { TextareaField } from "@/components/ui/textarea-field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/application-status";
@@ -168,16 +169,7 @@ export function ApplicationForm({ mode, application }: ApplicationFormProps) {
               className="text-slate-400 hover:text-sky-400"
             >
               <span className="sr-only">Ouvrir le lien de l&apos;offre dans un nouvel onglet</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-                className="size-4"
-              >
-                <path d="M12.5 3a.75.75 0 0 1 .75-.75h3.25a.75.75 0 0 1 .75.75v3.25a.75.75 0 0 1-1.5 0V4.81l-5.22 5.22a.75.75 0 0 1-1.06-1.06l5.22-5.22H12.5a.75.75 0 0 1-.75-.75Z" />
-                <path d="M4.75 4.5A1.25 1.25 0 0 0 3.5 5.75v9.5A1.25 1.25 0 0 0 4.75 16.5h9.5a1.25 1.25 0 0 0 1.25-1.25v-4a.75.75 0 0 0-1.5 0v4a.25.25 0 0 1-.25.25h-9.5a.25.25 0 0 1-.25-.25v-9.5a.25.25 0 0 1 .25-.25h4a.75.75 0 0 0 0-1.5h-4Z" />
-              </svg>
+              <ExternalLinkIcon className="size-4" />
             </a>
           ) : undefined
         }

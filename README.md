@@ -49,6 +49,13 @@ changement de statut, des rappels de relance, et un tableau de bord pour objecti
   réponse, répartition par statut (graphiques Recharts).
 - **Rappels de relance** : un script planifié détecte les candidatures sans nouvelles depuis plus de
   10 jours et génère une notification dans l'application.
+- **Refus automatique après 30 jours** : une candidature "Envoyée" sans le moindre changement de
+  statut depuis 30 jours passe automatiquement à "Refusée" (vérifié à chaque navigation dans
+  l'app). Exclue du calcul du taux de réponse, pour ne pas le fausser avec de faux "refus".
+- **Notifications du navigateur** (opt-in, dans Réglages) : rappel si aucune candidature n'a été
+  ajoutée depuis une semaine, ou si une candidature envoyée attend une relance depuis plus de
+  7 jours. Via l'API `Notification` du navigateur (fonctionne tant que l'onglet est ouvert, ce
+  n'est pas une vraie Web Push reçue navigateur fermé).
 - **Pré-remplissage assisté par IA** : colle le lien d'une offre (LinkedIn, Jobgether, Free-Work,
   Collective, Freelance-Informatique...) et un modèle Groq en extrait entreprise, poste, lieu,
   contrat, salaire, technologies et résumé pour pré-remplir le formulaire de création.
@@ -56,6 +63,9 @@ changement de statut, des rappels de relance, et un tableau de bord pour objecti
   y compris sur des pages qui nécessitent une connexion (LinkedIn Jobs...) — l'extension lit le
   texte déjà affiché dans le navigateur plutôt que de refaire une requête serveur qui se
   heurterait au mur de connexion. Voir [`extension/README.md`](extension/README.md).
+- **Tableau triable** sur `/applications` : en-têtes de colonnes cliquables (nom, date de
+  candidature, date de relance, statut), avec un lien "ouvrir dans un nouvel onglet" sur chaque
+  ligne.
 - **Compte de démonstration** pré-rempli avec une vingtaine de candidatures réalistes.
 
 ## Captures d'écran
