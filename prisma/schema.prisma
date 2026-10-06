@@ -25,6 +25,10 @@ model User {
   // Hash bcrypt, jamais le mot de passe en clair.
   passwordHash String
   name         String?
+  // Hash bcrypt du jeton utilisé par l'extension navigateur pour créer une
+  // candidature en un clic (voir src/server/actions/api-token.ts). Jamais le
+  // jeton en clair, qui n'est montré qu'une fois à sa génération.
+  apiTokenHash String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

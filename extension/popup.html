@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>JobTrack</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>JobTrack</h1>
+
+    <div id="setup">
+      <label for="token">Jeton (page Réglages de JobTrack)</label>
+      <input id="token" type="password" placeholder="colle ton jeton ici" />
+      <button id="save-token">Enregistrer le jeton</button>
+    </div>
+
+    <div id="main" class="hidden">
+      <button id="add-tab">Ajouter cette offre à JobTrack</button>
+      <button id="reconfigure" class="secondary">Changer de jeton</button>
+    </div>
+
+    <p id="status"></p>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

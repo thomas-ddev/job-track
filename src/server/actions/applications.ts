@@ -34,7 +34,7 @@ function dedupeTechnologyNames(names: string[]): string[] {
   return Array.from(byLowerCase.values());
 }
 
-async function upsertTechnologyIds(
+export async function upsertTechnologyIds(
   tx: Prisma.TransactionClient,
   names: string[],
 ): Promise<string[]> {

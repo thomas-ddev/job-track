@@ -18,6 +18,19 @@ function decodeEntities(value: string): string {
   return value.replace(ENTITY_PATTERN, (match) => ENTITY_MAP[match] ?? match);
 }
 
+// Pour du texte déjà en clair (ex. `element.innerText` scrapé par l'extension
+// navigateur) : pas de balises à retirer, juste compresser les espaces/lignes
+// vides et tronquer, pour rester cohérent avec ce qu'envoie htmlToText.
+export function normalizePlainText(text: string, maxLength = 15000): string {
+  const collapsed = text
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter((line) => line.length > 0)
+    .join("\n");
+
+  return collapsed.slice(0, maxLength);
+}
+
 export function htmlToText(html: string, maxLength = 15000): string {
   const withoutNonContent = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")

@@ -23,6 +23,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Code généré par Prisma : jamais écrit à la main, jamais linté.
     "src/generated/**",
+    // Extension navigateur autonome (WebExtensions API globale `browser`),
+    // hors du projet Next.js : pas les mêmes règles.
+    "extension/**",
   ]),
 ]);
 

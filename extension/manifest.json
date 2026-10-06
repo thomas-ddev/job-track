@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "JobTrack — Ajout rapide",
+  "version": "1.0.0",
+  "description": "Ajoute en un clic l'offre d'emploi affichée dans l'onglet actif à JobTrack (LinkedIn, Jobgether, Free-Work, Collective, Freelance-Informatique...).",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "jobtrack@thomasdubrez.fr",
+      "strict_min_version": "109.0"
+    }
+  },
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://jobs.thomasdubrez.fr/*"],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "JobTrack — Ajouter cette offre"
+  }
+}

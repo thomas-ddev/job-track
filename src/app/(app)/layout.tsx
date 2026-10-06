@@ -25,6 +25,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/kanban" className="text-sm text-slate-300 hover:text-slate-50">
             Kanban
           </Link>
+          <Link href="/settings" className="text-sm text-slate-300 hover:text-slate-50">
+            Réglages
+          </Link>
         </nav>
         <div className="flex items-center gap-3">
           <NotificationBell userId={userId} />
