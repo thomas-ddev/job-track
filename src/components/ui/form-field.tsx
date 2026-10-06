@@ -8,6 +8,10 @@ type FormFieldProps = {
   defaultValue?: string | number;
   placeholder?: string;
   errors?: string[];
+  // Élément optionnel affiché à côté du label (ex. un lien "ouvrir dans un
+  // nouvel onglet" pour le champ "Lien de l'offre") : évite de dupliquer le
+  // balisage label/input accessible de FormField pour ce seul besoin.
+  labelAddon?: React.ReactNode;
 };
 
 // Composant volontairement minimal : associe toujours le <label> à son champ
@@ -25,15 +29,19 @@ export function FormField({
   defaultValue,
   placeholder,
   errors,
+  labelAddon,
 }: FormFieldProps) {
   const errorId = `${id}-error`;
   const hasError = Boolean(errors?.length);
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-slate-200">
-        {label}
-      </label>
+      <div className="flex items-center gap-2">
+        <label htmlFor={id} className="text-sm font-medium text-slate-200">
+          {label}
+        </label>
+        {labelAddon}
+      </div>
       <input
         id={id}
         name={name}

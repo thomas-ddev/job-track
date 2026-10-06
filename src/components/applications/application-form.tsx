@@ -146,6 +146,38 @@ export function ApplicationForm({ mode, application }: ApplicationFormProps) {
         placeholder="https://..."
         defaultValue={(prefill ? jobUrlInput : application?.jobUrl) ?? undefined}
         errors={state?.errors?.jobUrl}
+        labelAddon={
+          // Uniquement sur la valeur déjà enregistrée (pas la saisie en
+          // cours, potentiellement invalide/non soumise). Le schéma Zod
+          // n'accepte que des URL http(s) depuis le correctif ci-dessus,
+          // mais on revérifie ici en défense en profondeur (données
+          // enregistrées avant ce correctif, écriture directe en base...)
+          // avant de rendre un <a href> cliquable.
+          mode === "edit" &&
+          application.jobUrl &&
+          (application.jobUrl.startsWith("http://") ||
+            application.jobUrl.startsWith("https://")) ? (
+            <a
+              href={application.jobUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              title="Ouvrir le lien de l'offre dans un nouvel onglet"
+              className="text-slate-400 hover:text-sky-400"
+            >
+              <span className="sr-only">Ouvrir le lien de l&apos;offre dans un nouvel onglet</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+                className="size-4"
+              >
+                <path d="M12.5 3a.75.75 0 0 1 .75-.75h3.25a.75.75 0 0 1 .75.75v3.25a.75.75 0 0 1-1.5 0V4.81l-5.22 5.22a.75.75 0 0 1-1.06-1.06l5.22-5.22H12.5a.75.75 0 0 1-.75-.75Z" />
+                <path d="M4.75 4.5A1.25 1.25 0 0 0 3.5 5.75v9.5A1.25 1.25 0 0 0 4.75 16.5h9.5a1.25 1.25 0 0 0 1.25-1.25v-4a.75.75 0 0 0-1.5 0v4a.25.25 0 0 1-.25.25h-9.5a.25.25 0 0 1-.25-.25v-9.5a.25.25 0 0 1 .25-.25h4a.75.75 0 0 0 0-1.5h-4Z" />
+              </svg>
+            </a>
+          ) : undefined
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2">

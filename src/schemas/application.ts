@@ -18,11 +18,22 @@ const optionalEmail = z
   .pipe(z.email({ error: "Adresse e-mail de contact invalide." }).optional())
   .optional();
 
+// `z.url()` seul accepte n'importe quel schéma valide au sens WHATWG,
+// y compris "javascript:" ou "data:" — un souci dès lors que ce champ est
+// rendu comme lien cliquable (voir ApplicationForm). On restreint donc
+// explicitement à http(s).
 const optionalUrl = z
   .string()
   .trim()
   .transform((value) => (value.length === 0 ? undefined : value))
-  .pipe(z.url({ error: "Le lien de l'offre doit être une URL valide." }).optional())
+  .pipe(
+    z
+      .url({ error: "Le lien de l'offre doit être une URL valide." })
+      .refine((value) => value.startsWith("http://") || value.startsWith("https://"), {
+        error: "Le lien de l'offre doit commencer par http:// ou https://.",
+      })
+      .optional(),
+  )
   .optional();
 
 // Le salaire arrive en chaîne depuis un <input type="number">. On valide le
