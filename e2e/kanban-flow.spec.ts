@@ -48,11 +48,22 @@ test("connexion, création d'une candidature puis déplacement dans le Kanban", 
   // src/components/kanban/kanban-card.tsx), et le select est un moyen fiable
   // et non flaky de déclencher ce changement en test automatisé.
   const statusSelect = page.getByLabel(`Changer le statut de ${position} chez ${company}`);
-  await statusSelect.selectOption("INTERVIEW");
 
-  // La mise à jour est optimiste côté client puis persistée en base : on
-  // recharge la page pour vérifier que le changement de statut a bien
-  // survécu, pas seulement l'état React local.
+  // La mise à jour est optimiste côté client (changeApplicationStatusAction
+  // s'exécute dans un startTransition, voir KanbanBoard.moveCard) : sans
+  // attendre explicitement la réponse de cette Server Action, `page.reload()`
+  // peut gagner la course sur un runner plus lent (CI) et recharger avant que
+  // l'écriture en base n'ait eu lieu, faisant échouer l'assertion suivante de
+  // façon intermittente.
+  await Promise.all([
+    page.waitForResponse(
+      (response) => response.request().method() === "POST" && response.url().includes("/kanban"),
+    ),
+    statusSelect.selectOption("INTERVIEW"),
+  ]);
+
+  // Persistée en base : on recharge la page pour vérifier que le changement
+  // de statut a bien survécu, pas seulement l'état React local.
   await page.reload();
   const interviewColumn = page.getByRole("heading", { name: "Entretien" }).locator("xpath=..");
   await expect(interviewColumn.getByRole("link", { name: position })).toBeVisible();
