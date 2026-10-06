@@ -12,9 +12,10 @@ import bcrypt from "bcryptjs";
 
 import { ApplicationStatus } from "@/generated/prisma";
 import { db } from "@/lib/db";
+import { DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD } from "@/lib/demo-account";
 
-export const DEMO_USER_EMAIL = "demo@jobtrack.dev";
-export const DEMO_USER_PASSWORD = "demo1234";
+export const DEMO_USER_EMAIL = DEMO_ACCOUNT_EMAIL;
+export const DEMO_USER_PASSWORD = DEMO_ACCOUNT_PASSWORD;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

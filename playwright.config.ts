@@ -1,10 +1,18 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Un seul test E2E pour cette phase (voir e2e/kanban-flow.spec.ts) : le
-// parcours critique connexion -> création -> déplacement Kanban. `webServer`
-// démarre automatiquement `next dev` avant les tests (et réutilise un
-// serveur déjà lancé en local, pratique en développement) plutôt que
-// d'exiger de lancer l'application manuellement avant chaque run.
+// `webServer` démarre automatiquement l'application avant les tests (et
+// réutilise un serveur déjà lancé en local, pratique en développement)
+// plutôt que d'exiger de lancer l'application manuellement avant chaque run.
+//
+// En CI, on build puis on sert le build de production plutôt que `next dev` :
+// le serveur de développement de Next.js (Turbopack, recompilation à la
+// volée au fil des requêtes du test) s'est révélé sujet à des plantages
+// internes ("turbo-tasks: an internal panic occurred") qui tuent le process
+// en cours de test — un problème d'outillage de développement, pas de
+// l'application, qui disparaît avec un serveur de production figé. En local,
+// `next dev` reste plus pratique (pas de build à attendre à chaque run).
+const useProductionServer = Boolean(process.env.CI);
+
 export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
@@ -21,9 +29,9 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "npm run dev",
+    command: useProductionServer ? "npm run build && npm run start" : "npm run dev",
     url: "http://localhost:3000",
-    reuseExistingServer: true,
-    timeout: 60_000,
+    reuseExistingServer: !useProductionServer,
+    timeout: useProductionServer ? 180_000 : 60_000,
   },
 });
