@@ -28,7 +28,7 @@ export default async function Home() {
   const session = await getOptionalSession();
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-slate-950">
+    <div className="relative isolate flex min-h-screen flex-col overflow-hidden bg-slate-950">
       <AnimatedBackground />
       <main className="flex flex-1 flex-col items-center gap-16 px-4 py-20 text-center">
         <div className="flex flex-col items-center gap-6">
