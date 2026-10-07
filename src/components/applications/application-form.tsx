@@ -157,7 +157,7 @@ export function ApplicationForm({ mode, application }: ApplicationFormProps) {
         value={jobUrlValue}
         onChange={(event) => setJobUrlValue(event.target.value)}
         errors={state?.errors?.jobUrl}
-        trailingAddon={<Favicon key={jobUrlValue} url={jobUrlValue} size={20} className="shrink-0 rounded-sm" />}
+        leadingAddon={<Favicon key={jobUrlValue} url={jobUrlValue} size={16} className="shrink-0 rounded-sm" />}
         labelAddon={
           // Uniquement sur la valeur déjà enregistrée (pas la saisie en
           // cours, potentiellement invalide/non soumise). Le schéma Zod

@@ -14,9 +14,10 @@ type FormFieldProps = {
   // nouvel onglet" pour le champ "Lien de l'offre") : évite de dupliquer le
   // balisage label/input accessible de FormField pour ce seul besoin.
   labelAddon?: React.ReactNode;
-  // Élément optionnel affiché à droite de l'input, dans le même conteneur
-  // (ex. favicon du lien de l'offre).
-  trailingAddon?: React.ReactNode;
+  // Élément optionnel superposé à l'intérieur de l'input, côté gauche (ex.
+  // favicon du lien de l'offre) : décale le texte avec du padding plutôt que
+  // de l'afficher à côté, pour rester compact.
+  leadingAddon?: React.ReactNode;
 };
 
 // Composant volontairement minimal : associe toujours le <label> à son champ
@@ -37,7 +38,7 @@ export function FormField({
   placeholder,
   errors,
   labelAddon,
-  trailingAddon,
+  leadingAddon,
 }: FormFieldProps) {
   const errorId = `${id}-error`;
   const hasError = Boolean(errors?.length);
@@ -50,7 +51,12 @@ export function FormField({
         </label>
         {labelAddon}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="relative flex items-center">
+        {leadingAddon && (
+          <span className="pointer-events-none absolute left-3 flex items-center">
+            {leadingAddon}
+          </span>
+        )}
         <input
           id={id}
           name={name}
@@ -63,9 +69,8 @@ export function FormField({
           placeholder={placeholder}
           aria-invalid={hasError}
           aria-describedby={hasError ? errorId : undefined}
-          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-50 ring-offset-2 outline-none placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-sky-500 aria-invalid:border-red-500"
+          className={`w-full rounded-md border border-slate-700 bg-slate-900 py-2 text-slate-50 ring-offset-2 outline-none placeholder:text-slate-500 focus-visible:ring-2 focus-visible:ring-sky-500 aria-invalid:border-red-500 ${leadingAddon ? "pl-9 pr-3" : "px-3"}`}
         />
-        {trailingAddon}
       </div>
       {hasError && (
         <p id={errorId} className="text-sm text-red-400">

@@ -52,7 +52,7 @@ export default async function Home() {
           {FEATURES.map((feature) => (
             <div
               key={feature.title}
-              className="flex flex-col gap-1.5 rounded-lg border border-slate-800 bg-slate-900/40 p-4"
+              className="flex flex-col gap-1.5 rounded-lg border border-slate-800 bg-slate-900/90 p-4"
             >
               <h2 className="font-medium text-slate-100">{feature.title}</h2>
               <p className="text-sm text-slate-400">{feature.description}</p>
