@@ -12,6 +12,7 @@ import { extractionToNotes } from "@/lib/job-posting-extraction";
 import { formatDateInputValue } from "@/lib/dates";
 import { FormField } from "@/components/ui/form-field";
 import { ExternalLinkIcon } from "@/components/ui/external-link-icon";
+import { Favicon } from "@/components/ui/favicon";
 import { TextareaField } from "@/components/ui/textarea-field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/application-status";
@@ -49,6 +50,11 @@ export function ApplicationForm({ mode, application }: ApplicationFormProps) {
   // `defaultValue` sans renoncer au pattern non-contrôlé du reste du
   // formulaire.
   const [jobUrlInput, setJobUrlInput] = useState("");
+  // Valeur courante du champ "Lien de l'offre" (distinct de jobUrlInput
+  // ci-dessus, propre au pré-remplissage par IA en mode création) : permet
+  // de faire vivre l'aperçu du favicon à côté du champ au fil de la saisie,
+  // y compris en mode édition.
+  const [jobUrlValue, setJobUrlValue] = useState(application?.jobUrl ?? "");
   const [prefill, setPrefill] = useState<{
     company: string;
     position: string;
@@ -78,6 +84,7 @@ export function ApplicationForm({ mode, application }: ApplicationFormProps) {
       technologies: result.data.technologies.join(", "),
       notes: extractionToNotes(result.data),
     });
+    setJobUrlValue(jobUrlInput);
     setPrefillKey((key) => key + 1);
   }
 
@@ -141,15 +148,16 @@ export function ApplicationForm({ mode, application }: ApplicationFormProps) {
       </div>
 
       <FormField
-        key={`jobUrl-${prefillKey}`}
         id="jobUrl"
         name="jobUrl"
         label="Lien de l'offre"
         type="url"
         required={false}
         placeholder="https://..."
-        defaultValue={(prefill ? jobUrlInput : application?.jobUrl) ?? undefined}
+        value={jobUrlValue}
+        onChange={(event) => setJobUrlValue(event.target.value)}
         errors={state?.errors?.jobUrl}
+        trailingAddon={<Favicon key={jobUrlValue} url={jobUrlValue} size={20} className="shrink-0 rounded-sm" />}
         labelAddon={
           // Uniquement sur la valeur déjà enregistrée (pas la saisie en
           // cours, potentiellement invalide/non soumise). Le schéma Zod

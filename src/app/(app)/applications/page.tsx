@@ -15,6 +15,7 @@ import {
 } from "@/server/data/applications";
 import { StatusBadge } from "@/components/applications/status-badge";
 import { ExternalLinkIcon } from "@/components/ui/external-link-icon";
+import { Favicon } from "@/components/ui/favicon";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/application-status";
 import { ApplicationStatus } from "@/generated/prisma";
 
@@ -301,6 +302,12 @@ export default async function ApplicationsPage({ searchParams }: PageProps) {
                 <tr key={application.id} className="transition-colors hover:bg-slate-900">
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-1.5">
+                      <Favicon
+                        key={application.jobUrl}
+                        url={application.jobUrl}
+                        size={16}
+                        className="shrink-0 rounded-sm"
+                      />
                       <Link
                         href={`/applications/${application.id}`}
                         className="font-medium text-slate-50 hover:underline"
